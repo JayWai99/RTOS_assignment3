@@ -22,34 +22,136 @@ the assignment 3 requirement. Assignment 3
 #include <sys/stat.h>
 
 #define PROCESS_NUMBER 7
+#define TIME_QUANTUM 4
 
 typedef struct RR_Params {
   //add your variables here
-  int process_id;
-  int arrive_time, wait_time, burst_time, turn_around_time, remain_time;
+  int process_id, queue_id;
+  int arrive_time, wait_time, burst_time, turnaround_time, remain_time, tick;
+  bool running;
 } ThreadParams;
 
-ThreadParams processes[8];
+ThreadParams processes[7];
 
 sem_t sem_RR;
 
 int i;
 
+float average_wait = 0;
+
+float average_turnaround = 0;
+
 pthread_t thread_A, thread_B;
 
 void set_input_processes() {
-	processes[0].process_id = 1; processes[0].arrive_time = 8; processes[0].burst_time = 10;
-	processes[1].process_id = 2; processes[1].arrive_time = 10; processes[1].burst_time = 3;
-	processes[2].process_id = 3; processes[2].arrive_time = 14; processes[2].burst_time = 7;
-	processes[3].process_id = 4; processes[3].arrive_time = 9; processes[3].burst_time = 5;
-	processes[4].process_id = 5; processes[4].arrive_time = 16; processes[4].burst_time = 4;
-	processes[5].process_id = 6; processes[5].arrive_time = 21; processes[5].burst_time = 6;
-	processes[6].process_id = 7; processes[6].arrive_time = 26; processes[6].burst_time = 2;
+	processes[0].process_id = 1; processes[0].arrive_time = 8; processes[0].burst_time = 10; 
+	processes[1].process_id = 2; processes[1].arrive_time = 10; processes[1].burst_time = 3; 
+	processes[2].process_id = 3; processes[2].arrive_time = 14; processes[2].burst_time = 7; 
+	processes[3].process_id = 4; processes[3].arrive_time = 9; processes[3].burst_time = 5; 
+	processes[4].process_id = 5; processes[4].arrive_time = 16; processes[4].burst_time = 4; 
+	processes[5].process_id = 6; processes[5].arrive_time = 21; processes[5].burst_time = 6; 
+	processes[6].process_id = 7; processes[6].arrive_time = 26; processes[6].burst_time = 2; 
+
+	processes[0].running = false; processes[0].tick = 0; processes[0].queue_id = 0;
+	processes[1].running = false; processes[1].tick = 0; processes[1].queue_id = 0;
+	processes[2].running = false; processes[2].tick = 0; processes[2].queue_id = 0;
+	processes[3].running = false; processes[3].tick = 0; processes[3].queue_id = 0;
+	processes[4].running = false; processes[4].tick = 0; processes[4].queue_id = 0;
+	processes[5].running = false; processes[5].tick = 0; processes[5].queue_id = 0;
+	processes[6].running = false; processes[6].tick = 0; processes[6].queue_id = 0;
+
 
      	//remain_time = burst_time at this point because nothing has
 		// been processed yet.
 	for (i = 0; i < PROCESS_NUMBER; i++) {
 		processes[i].remain_time = processes[i].burst_time;
+	}
+}
+
+void calculate_average(){
+	average_wait /= PROCESS_NUMBER;
+	average_turnaround /= PROCESS_NUMBER; 
+}
+
+void run_process_RR(){
+	/* example from shortest time remaining first
+	int end_time, smallest, time, remainder = 0;
+
+	processes[8].remain_time = 9999;
+
+	for ( time = 0; remainder != PROCESS_NUMBER; time++)
+	{
+		smallest = 8;
+
+		for (int i = 0; i < PROCESS_NUMBER; i++){
+			if (processes[i].arrive_time <= time && processes[i].remain_time < processes[smallest].remain_time && processes[i].remain_time > 0){
+				smallest = i;
+			}	
+		}
+		processes[smallest].remain_time--;
+
+		if (processes[smallest].remain_time == 0){
+			
+			remainder++;
+
+			end_time = time+1;
+
+			processes[smallest].turnaround_time = end_time - processes[smallest].arrive_time;
+
+			processes[smallest].wait_time = end_time - processes[smallest].burst_time - processes[smallest].arrive_time;
+
+			average_wait += processes[smallest].wait_time;
+
+			average_turnaround += processes[smallest].turnaround_time;
+		}
+	}*/
+
+	int end_time, queue = 0, time, current, remainder = 0;
+
+	for (time = 0; remainder != PROCESS_NUMBER; time++){
+		for (int i = 0; i < PROCESS_NUMBER; i++){
+			if (time == processes[i].arrive_time && processes[i].running == false){
+				processes[i].running == true;
+				queue++;
+				processes[i].queue_id = queue;
+				current = i;
+			}
+			
+			// else if (time == processes[i].arrive_time && processes[i].running == true && queue == i){
+			// 	if (processes[i].tick < TIME_QUANTUM && processes[i].remain_time > 0){
+			// 		processes[i].tick++;
+			// 		processes[i].remain_time--;
+			// 	} 
+			// 	else{
+			// 		processes[i].tick = 0;
+			// 		queue = 0;
+			// 		processes[i].running = false;
+			// 		remainder++;
+			// 	}
+			// }
+		}
+		if (processes[current].tick < TIME_QUANTUM && processes[current].remain_time > 0)
+		{
+			processes[current].remain_time--;
+			processes[current].tick++;
+		}
+		else if(processes[current].tick >= TIME_QUANTUM && processes[current].remain_time > 0){
+			processes[current].tick = 0;
+			processes[current].running = false;
+		}
+		else{
+			processes[current].tick = 0;
+			processes[current].running = false;
+			remainder++;
+			end_time = time + 1;
+			processes[current].turnaround_time = end_time - processes[current].arrive_time;
+			processes[current].wait_time = end_time - processes[current].burst_time - processes[current].arrive_time;
+			average_wait += processes[current].wait_time;
+			average_turnaround += processes[current].turnaround_time;	
+		}
+		
+		
+
 	}
 }
 
