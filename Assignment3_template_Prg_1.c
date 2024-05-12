@@ -31,9 +31,9 @@ typedef struct RR_Params {
   bool running;
 } ThreadParams;
 
-ThreadParams processes[7];
-
 sem_t sem_RR;
+
+ThreadParams processes[7];
 
 int i;
 
@@ -74,93 +74,107 @@ void calculate_average(){
 }
 
 void run_process_RR(){
-	/* example from shortest time remaining first
-	int end_time, smallest, time, remainder = 0;
-
-	processes[8].remain_time = 9999;
-
-	for ( time = 0; remainder != PROCESS_NUMBER; time++)
-	{
-		smallest = 8;
-
+	int end_time, queue = 0, time = 0, current, remainder = 0;
+	bool taken = false;
+	while (time<30){
+		printf("Current Time: %i\n", time);
 		for (int i = 0; i < PROCESS_NUMBER; i++){
-			if (processes[i].arrive_time <= time && processes[i].remain_time < processes[smallest].remain_time && processes[i].remain_time > 0){
-				smallest = i;
-			}	
-		}
-		processes[smallest].remain_time--;
-
-		if (processes[smallest].remain_time == 0){
-			
-			remainder++;
-
-			end_time = time+1;
-
-			processes[smallest].turnaround_time = end_time - processes[smallest].arrive_time;
-
-			processes[smallest].wait_time = end_time - processes[smallest].burst_time - processes[smallest].arrive_time;
-
-			average_wait += processes[smallest].wait_time;
-
-			average_turnaround += processes[smallest].turnaround_time;
-		}
-	}*/
-
-	int end_time, queue = 0, time, current, remainder = 0;
-
-	for (time = 0; remainder != PROCESS_NUMBER; time++){
-		for (int i = 0; i < PROCESS_NUMBER; i++){
-			if (time == processes[i].arrive_time && processes[i].running == false){
+			if (time == processes[i].arrive_time && processes[i].running == false && current == 0){
 				processes[i].running == true;
 				queue++;
 				processes[i].queue_id = queue;
-				current = i;
+				current = queue;
+				printf("Process %i is now running with queue number %i.\n", processes[i].process_id, processes[i].queue_id);
+			}
+			else if (time == processes[i].arrive_time && processes[i].running == false && current != 0)
+			{
+				queue++;
+				processes[i].queue_id = queue;
+				printf("Process %i has taken a queue number %i and is currently waiting.\n", processes[i].process_id, processes[i].queue_id);
+			}
+			else{
+				printf("Process %i is not running.\n", processes[i].process_id);
+			}
+		}
+		
+		for (int j = 0; j < PROCESS_NUMBER; j++){
+			
+		}
+		
+	}
+	
+	/*
+	for (time = 0; remainder != PROCESS_NUMBER; time++){ 
+		printf("Current Time: %i\n", time); 
+		for (int i = 0; i < PROCESS_NUMBER; i++){
+			if (time == processes[i].arrive_time && processes[i].running == false && current == 0){
+				processes[i].running == true;
+				queue++;
+				processes[i].queue_id = queue;
+				current = i+1;
+				printf("Process %i is now running with queue number %i.\n", processes[i].process_id, processes[i].queue_id);
+			}
+			else if (time == processes[i].arrive_time && processes[i].running == false && current != 0 & current != processes[i].queue_id){
+				queue++;
+				processes[i].queue_id = queue;				
+				printf("Process %i has taken a queue number %i and is currently waiting.\n", processes[i].process_id, processes[i].queue_id);
 			}
 			
-			// else if (time == processes[i].arrive_time && processes[i].running == true && queue == i){
-			// 	if (processes[i].tick < TIME_QUANTUM && processes[i].remain_time > 0){
-			// 		processes[i].tick++;
-			// 		processes[i].remain_time--;
-			// 	} 
-			// 	else{
-			// 		processes[i].tick = 0;
-			// 		queue = 0;
-			// 		processes[i].running = false;
-			// 		remainder++;
-			// 	}
-			// }
+			else{
+				printf("Process %i is not running.\n", i);
+			}
 		}
-		if (processes[current].tick < TIME_QUANTUM && processes[current].remain_time > 0)
-		{
-			processes[current].remain_time--;
-			processes[current].tick++;
-		}
-		else if(processes[current].tick >= TIME_QUANTUM && processes[current].remain_time > 0){
-			processes[current].tick = 0;
-			processes[current].running = false;
-		}
-		else{
-			processes[current].tick = 0;
-			processes[current].running = false;
-			remainder++;
-			end_time = time + 1;
-			processes[current].turnaround_time = end_time - processes[current].arrive_time;
-			processes[current].wait_time = end_time - processes[current].burst_time - processes[current].arrive_time;
-			average_wait += processes[current].wait_time;
-			average_turnaround += processes[current].turnaround_time;	
-		}
-		
-		
 
+		for (int j = 0; j < PROCESS_NUMBER; j++){
+			if (j+1 != processes[j].queue_id || processes[j].running != true){
+				continue;
+			}
+			else{
+				if (processes[current].tick < TIME_QUANTUM && processes[current].remain_time > 0){
+					processes[current].remain_time--;
+					processes[current].tick++;
+				}
+				else if(processes[current].tick >= TIME_QUANTUM && processes[current].remain_time > 0){
+					processes[current].tick = 0;
+					processes[current].running = false;
+				}
+				else{
+					processes[current].tick = 0;
+					processes[current].running = false;
+					remainder++;
+					end_time = time + 1;
+					processes[current].turnaround_time = end_time - processes[current].arrive_time;
+					processes[current].wait_time = end_time - processes[current].burst_time - processes[current].arrive_time;
+					average_wait += processes[current].wait_time;
+					average_turnaround += processes[current].turnaround_time;	
+				}
+			}	
+		}
+	}	
+	*/
+}
+
+//Print results, taken from sample
+void print_results() {
+	
+	printf("Process Schedule Table: \n");
+	
+	printf("\tProcess ID\tArrival Time\tBurst Time\tWait Time\tTurnaround Time\n");
+	
+	for (i = 0; i<PROCESS_NUMBER; i++) {
+	  	printf("\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n", processes[i].process_id,processes[i].arrive_time, processes[i].burst_time, processes[i].wait_time, processes[i].turnaround_time);
 	}
+	
+	printf("\nAverage wait time: %fs\n", average_wait);
+	
+	printf("\nAverage turnaround time: %fs\n", average_turnaround);
 }
 
 /* this function calculates Round Robin (RR) with a time quantum of 4, writes waiting time and turn-around time to the RR */
-void *worker1(void *params)
+void *worker1()
 {
    // add your code here
-   set_input_processes();
-   //run_process_RR();
+   run_process_RR();
    //calculate_average();
    //fifo_write();
    sem_post(&sem_RR);
@@ -169,8 +183,10 @@ void *worker1(void *params)
 /* reads the waiting time and turn-around time through the RR and writes to text file */
 void *worker2()
 {
+
    // add your code here
    sem_wait(&sem_RR);
+   print_results();
    //fifo_read();
    //write_file();
 }
@@ -183,6 +199,9 @@ int main(void)
 
 	/* initialize the parameters */
 	 // add your code 
+	
+	set_input_processes();
+	
 	if (sem_init(&sem_RR, 0, 0) != 0){
 		perror("Failed to initialise semaphore.");
 		exit(-1);
