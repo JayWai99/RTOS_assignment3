@@ -65,25 +65,12 @@ void set_input_processes() {
 	processes[6].running = false; processes[6].tick = 0; processes[6].queue_id = 0;
 
 
-     	//remain_time = burst_time at this point because nothing has
+     	// remain_time = burst_time at this point because nothing has
 		// been processed yet.
 	for (i = 0; i < PROCESS_NUMBER; i++) {
 		processes[i].remain_time = processes[i].burst_time;
 		printf("Process %i has %i seconds left.\n", processes[i].process_id, processes[i].remain_time);
 	}
-}
-
-void next_in_queue(){
-	active++;
-	for (int j = 0; j < PROCESS_NUMBER; j++){
-		if (processes[j].queue_id == active){
-			active = processes[j].process_id - 1;
-		}
-	}
-	if (processes[active].remain_time == 0){
-		next_in_queue();
-	}	
-	printf("active = %i\n", active);
 }
 
 void calculate_average(){
@@ -92,21 +79,22 @@ void calculate_average(){
 }
 
 void run_process_RR(){
-	int end_time, queue = 0, time = 0;
-	bool found = false;
-	while (time < 17){
+	int end_time, queue = 0, temp, time = 0;
+	bool found;
+	while (remaining != PROCESS_NUMBER){
+		found = false;
 		printf("Time: %i\n", time);
 		for (int i = 0; i < PROCESS_NUMBER; i++){
-			if(processes[i].queue_id != 0){
+			if(processes[i].queue_id > 0){
 				continue;
 			}			
 			else if (time == processes[i].arrive_time && processes[i].running == false && queue == 0){
-				processes[i].running == true;
+				processes[i].running = true;
 				queue++;
 				processes[i].queue_id = queue;
 				active = processes[i].queue_id -1;
-				printf("active = %i\n", active);
 				printf("Process %i is now running with queue number %i.\n", processes[i].process_id, processes[i].queue_id);
+				printf("Process %i with queue number %i has %i seconds remaining.\n", processes[active].process_id, processes[active].queue_id, processes[active].remain_time);
 			}
 			else if (time == processes[i].arrive_time && processes[i].running == false && queue != 0){
 				queue++;
@@ -114,72 +102,95 @@ void run_process_RR(){
 				printf("Process %i has taken a queue number %i and is actively waiting.\n", processes[i].process_id, processes[i].queue_id);
 			}
 		}
-		printf("active = %i\n", active);
 		if (queue == 0){
 			time++;
 			continue;
 		}
-		
-		if (processes[active].tick < TIME_QUANTUM && processes[active].remain_time > 0){
+
+		if (processes[active].tick < TIME_QUANTUM && processes[active].remain_time > 0 && processes[active].running == true){
 			processes[active].remain_time--;
 			printf("Process %i has %i seconds left.\n", processes[active].process_id, processes[active].remain_time);
 			processes[active].tick++;
 			printf("Process %i tick = %i\n", processes[active].process_id, processes[active].tick);
 			time++;
-			if (processes[active].remain_time == 0){
-				processes[active].running = false;
-				processes[active].tick = 0;
-				printf("Process %i has finished running.\n", processes[active].process_id);
-				remaining++;
-				if (active == PROCESS_NUMBER - 1){
-					active = 0;
-				}
-				else{
-					while(found == false){
-						if (active == PROCESS_NUMBER){
-							active = 0;
-						}
-						active++;
-						for (int j = 0; j < PROCESS_NUMBER; j++){
-							if (processes[j].queue_id == active){
-								active = processes[j].process_id - 1;
-							}
-						}
-						if (processes[active].remain_time != 0){
-							found = true;
-						}
-					}
-					// next_in_queue();
-				}
-				printf("active = %i\n", active);
-			}
-			else if (processes[active].tick == TIME_QUANTUM){
+			if (processes[active].tick == TIME_QUANTUM){
 				processes[active].running = false;
 				processes[active].tick = 0;
 				printf("Process %i has finished a cycle.\n", processes[active].process_id);
-				if (active == PROCESS_NUMBER - 1){
-					active = 0;
-				}
-				else{
-					while(found == false){
-						if (active == PROCESS_NUMBER){
-							active = 0;
-						}
-						active++;
-						for (int j = 0; j < PROCESS_NUMBER; j++){
-							if (processes[j].queue_id == active){
-								active = processes[j].process_id - 1;
-							}
-						}
-						if (processes[active].remain_time != 0){
-							found = true;
+				if (processes[active].queue_id == PROCESS_NUMBER){
+					for (int k = 0; k < PROCESS_NUMBER; k++){
+						if (processes[k].queue_id == 1){
+							active = k;
+							processes[active].running = true;
+							printf("Process %i with queue number %i will begin running in the next cycle.\n", processes[active].process_id, processes[active].queue_id);
+							printf("Process %i with queue number %i has %i seconds remaining.\n", processes[active].process_id, processes[active].queue_id, processes[active].remain_time);
 						}
 					}
-					// next_in_queue();
-			}
-				
+				}
+				else{
+					temp = processes[active].queue_id + 1;
+					while(found == false){
+						for (int j = 0; j < PROCESS_NUMBER; j++){
+							if (processes[j].queue_id == temp && processes[j].remain_time != 0){
+								active = j;
+								processes[active].running = true;
+								printf("Process %i with queue number %i will begin running in the next cycle.\n", processes[active].process_id, processes[active].queue_id);
+								printf("Process %i with queue number %i has %i seconds remaining.\n", processes[active].process_id, processes[active].queue_id, processes[active].remain_time);
+								found = true;
+								break;
+							}			
+						}
 
-		}
+						if (temp == PROCESS_NUMBER){
+							temp = 1;
+						}
+						else temp++;						
+					}
+				}
+				printf("active = %i\n", active);
+
+			}
+			else if (processes[active].remain_time == 0){
+				processes[active].running = false;
+				processes[active].tick = 0;
+				printf("Process %i has finished running.\n", processes[active].process_id);
+				if (remaining != PROCESS_NUMBER){
+					if (processes[active].queue_id == PROCESS_NUMBER){
+						for (int k = 0; k < PROCESS_NUMBER; k++){
+							if (processes[k].queue_id == 1){
+								active = k;
+								processes[active].running = true;
+								printf("Process %i with queue number %i will begin running in the next cycle.\n", processes[active].process_id, processes[active].queue_id);
+								printf("Process %i with queue number %i has %i seconds remaining.\n", processes[active].process_id, processes[active].queue_id, processes[active].remain_time);
+							}
+						}
+					}
+					else{
+						temp = processes[active].queue_id + 1;
+						while(found == false){
+							for (int j = 0; j < PROCESS_NUMBER; j++){
+								if (processes[j].queue_id == temp && processes[j].remain_time != 0){
+									active = j;
+									processes[active].running = true;
+									printf("Process %i with queue number %i will begin running in the next cycle.\n", processes[active].process_id, processes[active].queue_id);
+									printf("Process %i with queue number %i has %i seconds remaining.\n", processes[active].process_id, processes[active].queue_id, processes[active].remain_time);
+									found = true;
+									break;
+								}
+							}
+
+							if (temp == PROCESS_NUMBER){
+								temp = 1;
+							}
+							else temp++;						
+						}
+					}
+				}
+					
+				printf("active = %i\n", active);
+				remaining++;
+			}
+
 
 	}
 	}	
