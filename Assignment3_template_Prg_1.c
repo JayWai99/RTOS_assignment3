@@ -35,11 +35,15 @@ sem_t sem_RR, sem_FIFO;
 
 char output_file[50];
 
-char* fifo_file = "./fifoAssignment3";
+const char* fifo_file = "./fifoAssignment3";
+
+int file_descriptor;
 
 ThreadParams processes[7];
 
 int i;
+
+char output[100];
 
 float total_wait = 0;
 
@@ -55,6 +59,7 @@ int active = 0, queue = 0;
 
 int remaining = 0;
 
+// Initialises all the members for the ThreadParams struct
 void set_input_processes() {
 	processes[0].process_id = 1; processes[0].arrive_time = 8; processes[0].burst_time = 10; 
 	processes[1].process_id = 2; processes[1].arrive_time = 10; processes[1].burst_time = 3; 
@@ -88,6 +93,7 @@ void set_input_processes() {
 	}
 }
 
+// Assignes queue id for every process based on arrive time
 void assign_queue(int counter){
 	for (int i = 0; i < PROCESS_NUMBER; i++){
 		if(processes[i].queue_id > 0){
@@ -109,6 +115,7 @@ void assign_queue(int counter){
 	}
 }
 
+// Calculates wait time for every process
 void increment_wait_time(){
 	for (int i = 0; i < PROCESS_NUMBER; i++){
 		if(processes[i].running == false && processes[i].remain_time > 0){
@@ -117,6 +124,7 @@ void increment_wait_time(){
 	}	
 }
 
+// Calculates turnaround time for every process
 void increment_turnaround_time(){
 	for (int i = 0; i < PROCESS_NUMBER; i++){
 		if (processes[i].remain_time > 0){
@@ -125,6 +133,7 @@ void increment_turnaround_time(){
 	}
 }
 
+// The scheduler that runs according to queue_id
 int scheduler(int counter, bool found){
 	int temp;
 	if (processes[active].tick < TIME_QUANTUM && processes[active].remain_time > 0 && processes[active].running == true){
@@ -225,6 +234,8 @@ int scheduler(int counter, bool found){
 	return counter;
 }
 
+/* This function calls multiple other functions to simulate
+   a Round Robin Scheduler.*/
 void run_process_RR(){
 	int time = 0;
 	bool found;
@@ -247,19 +258,126 @@ void run_process_RR(){
 	}
 }
 
+// This function calculates the average values.
 void calculate_average(){
 	average_wait = total_wait/PROCESS_NUMBER;
 	average_turnaround = total_turnaround/PROCESS_NUMBER; 
 }
 
+/* Supposedly, this function concatenates everything into a string,
+   and writes that string to FIFO. This function is not working
+   at the moment.*/
+// void fifo_write(){
 
-void fifo_write(){
+// 	int result ;
+// 	char* wait_title = "Average Wait Time = ";
+// 	char* turnaround_title = "Average Turnaround Time = ";
+// 	char wait_value[20];
+// 	char turnaround_value[20];
+// 	char* unit = " milliseconds\n";
+
+// 	gcvt(average_wait, 8, wait_value);
+// 	gcvt(average_turnaround, 8, turnaround_value);
+
+// 	strcat(output, wait_title);
+// 	strcat(output, wait_value);
+// 	strcat(output, unit);
+// 	strcat(output, turnaround_title);
+// 	strcat(output, turnaround_value);
+// 	strcat(output, unit);
+// 	printf("%s", output);
+// 	printf("%i\n", strlen(output));
+		
+
+// 		file_descriptor = open(fifo_file, O_WRONLY, 0777);
+// 		if (file_descriptor == -1){
+// 			perror("Error opening file.\n");
+// 			exit(-7);
+// 		}
+
+// 		printf("Writing results to FIFO...\n");
+
+// 		sem_post(&sem_FIFO);
+// 		while(true){
+// 			result = write(file_descriptor, output, strlen(output));
+		
+
+
+// 		if (result == 0){
+// 			perror("Error occurred when attempting to read from FIFO.\n");
+// 			exit(-8);
+// 		}
+// 		printf("%i\n", result);
+				
+// 		// write(file_descriptor, output, strlen(output)+1);
+
+
+
+// 		printf("Results have been written into FIFO.\n");
+
+// 			close(file_descriptor);
+
+
+// 	}
+// }
+/* Supposedly, this function reads string from FIFO. It is 
+   not working at the moment.*/
+// const char* fifo_read(){
+// 	int result;
+
+// 	static char fifo_output[100];
+
+
+
+// 		file_descriptor = open(fifo_file, O_RDONLY);
+// 		if (file_descriptor == -1){
+// 			perror("Error opening file.\n");
+// 			exit(-7);
+// 		}
+
+// 		printf("Thread B is waiting for data from FIFO...\n");
+
+// 		sem_wait(&sem_FIFO);
+// 		while(true){
+// 			result = read(file_descriptor, fifo_output, strlen(fifo_output));
+		
+		
+// 		// if (result == 0){
+// 		// 	perror("Error occurred when attempting to read from FIFO.\n");
+// 		// 	exit(-8);
+// 		// }
+// 		// result = read(file_descriptor, (char*)fifo_output, strlen(fifo_output));
+		
+// 		printf("%i\n", strlen(fifo_output));
+
+
+
+		
+		
+// 		printf("Results have been read from FIFO.\n");
+// 		if (strlen(fifo_output) > 0){
+// 			close(file_descriptor);
+// 			break;
+// 		}
+// 		else continue;
+		
+// 	}
+
+// 	printf("%s\n", fifo_output);
+// 	return fifo_output;
+// }
+
+/*Concatenate everything and writes the string into the output file.
+  Originally was only supposed to write string from fifo_read function
+  into output file, but I was not able to make FIFO work.*/ 
+void write_file(){
+	FILE* fptr = fopen(output_file, "w");
+	char* file_content;
 	char* wait_title = "Average Wait Time = ";
 	char* turnaround_title = "Average Turnaround Time = ";
 	char wait_value[20];
 	char turnaround_value[20];
 	char* unit = " milliseconds\n";
-	char output[100];
 
 	gcvt(average_wait, 8, wait_value);
 	gcvt(average_turnaround, 8, turnaround_value);
@@ -270,112 +388,24 @@ void fifo_write(){
 	strcat(output, turnaround_title);
 	strcat(output, turnaround_value);
 	strcat(output, unit);
-	// printf("%s", output);
-	// printf("%i\n", strlen(output));
-	int file_descriptor;
-	int result = 0 ;
-		
-	while(true){
-		file_descriptor = open(fifo_file, O_WRONLY);
-		if (file_descriptor == -1){
-			perror("Error opening file.\n");
-			exit(-7);
-		}
+	printf("%s", output);
+	printf("%i\n", strlen(output));
 
-		printf("Writing results to FIFO...\n");
-		// do
-		// {
-		// 	result = write(file_descriptor, output, strlen(output));
-		
-		// } while (result < strlen(output));
-
-		write(file_descriptor, output, strlen(output)+1);
-
-		// sem_post(&sem_FIFO);
-		close(file_descriptor);
-
-		printf("Results have been written into FIFO.\n");
-		break;
-	}
-}
-
-const char* fifo_read(){
-	int file_descriptor, result = 0;
-
-	static char fifo_output[100];
-
-	while(true){
-
-		file_descriptor = open(fifo_file, O_RDONLY);
-		if (file_descriptor == -1){
-			perror("Error opening file.\n");
-			exit(-7);
-		}
-
-		printf("Thread B is waiting for data from FIFO...\n");
-		// sem_wait(&sem_FIFO);
-		sleep(5);		
-		// do
-		// {
-		// 	result = read(file_descriptor, fifo_output, strlen(fifo_output));
-		// } while (result < strlen(fifo_output));
-		
-		// if (result == -1){
-		// 	fprintf( stdout, "%s\n", strerror( errno ));
-		// 	// perror("Error occurred when attempting to read from FIFO.\n");
-		// 	exit(-8);
-		// }
-
-		read(file_descriptor, fifo_output, strlen(fifo_output));
-
-		close(file_descriptor);
-
-		
-		
-		printf("Results have been read from FIFO.\n");
-	break;
-		
+	if (fptr == NULL){
+		printf("Failed to open file.");
+		exit(-10);
 	}
 
-	printf("%s\n", fifo_output);
-	return fifo_output;
+	//   strcpy(text, fifo_string);
+
+	fprintf(fptr, "%s", output);
+	fclose(fptr);
+
+	printf("Finished.\n");
 }
 
-void write_file(const char* fifo_string){
-  FILE* fptr = fopen(output_file, "w");
-  char* file_content;
-//   char text[100];
-
-  if (fptr == NULL){
-    printf("Failed to open file.");
-    exit(-10);
-  }
-
-//   strcpy(text, fifo_string);
-
-  fprintf(fptr, "%s", fifo_string);
-  fclose(fptr);
-
-  printf("Finished.\n");
-}
-
-//Print results, taken from sample
-void print_results() {
-	
-	printf("Process Schedule Table: \n");
-	
-	printf("\tProcess ID\tArrival Time\tBurst Time\tWait Time\tTurnaround Time\n");
-	
-	for (i = 0; i<PROCESS_NUMBER; i++) {
-	  	printf("\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n", processes[i].process_id,processes[i].arrive_time, processes[i].burst_time, processes[i].wait_time, processes[i].turnaround_time);
-	}
-	
-	printf("\nAverage wait time: %fs\n", average_wait);
-	
-	printf("\nAverage turnaround time: %fs\n", average_turnaround);
-}
-
-/* this function calculates Round Robin (RR) with a time quantum of 4, writes waiting time and turn-around time to the RR */
+/* This function calculates Round Robin (RR) with a time quantum of 4,
+ writes waiting time and turn-around time to the RR */
 void *worker1()
 {
    // add your code here
@@ -383,18 +413,18 @@ void *worker1()
    calculate_average();
 //    const char* output = generate_output_string();
    sem_post(&sem_RR); 
-   fifo_write();
+//    fifo_write();
 }
 
-/* reads the waiting time and turn-around time through the RR and writes to text file */
+/* Reads the waiting time and turn-around time through the RR and writes to text file */
 void *worker2()
 {
 
    // add your code here
 	sem_wait(&sem_RR);
-	const char* output = fifo_read();
+	// const char* output = fifo_read();
 	//print_results();
-	write_file(output);
+	write_file();
 }
 
 /* this main function creates named pipe and threads */
@@ -414,7 +444,7 @@ int main(int argc, char* argv[]){
 	// add your code 
 
 	if (access(fifo_file, F_OK) != 0){
-		if (mkfifo(fifo_file, 0666) != 0){
+		if (mkfifo(fifo_file, 0777) != 0){
 		perror("Failed to create named pipe.");
 		exit(-2);
 		}
@@ -467,6 +497,12 @@ int main(int argc, char* argv[]){
 	    perror("Failed to destroy semaphore.");
 	    exit(-6);
 	}	
+
+	if (sem_destroy(&sem_FIFO) != 0){
+		perror("Failed to destroy semaphore.");
+		exit(-6);
+	}
+	
 
 	return 0;
 }
