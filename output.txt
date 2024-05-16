@@ -1,0 +1,2 @@
+Average Wait Time = 29.857143 milliseconds
+Average Turnaround Time = 35.142857 milliseconds
