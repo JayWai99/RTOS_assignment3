@@ -93,17 +93,17 @@ void set_input_processes() {
 	}
 }
 
-// Assignes queue id for every process based on arrive time
+// Assigns queue id for every process based on arrive time
 void assign_queue(int counter){
 	for (int i = 0; i < PROCESS_NUMBER; i++){
 		if(processes[i].queue_id > 0){
-			continue;
+			continue; // skipping mechanism if the queue id has been given to process.
 		}			
 		else if (counter == processes[i].arrive_time && processes[i].running == false && queue == 0){
 			processes[i].running = true;
-			queue++;
+			queue++; // queue value starts from 1 to 7, just like process id, meant for the user to read
 			processes[i].queue_id = queue;
-			active = processes[i].queue_id -1;
+			active = processes[i].queue_id -1; // active starts from 0 to 6 because it is used as an index value when running the schduler.
 			printf("Process %i is now running with queue number %i.\n", processes[i].process_id, processes[i].queue_id);
 			printf("Process %i with queue number %i has %i milliseconds remaining.\n", processes[active].process_id, processes[active].queue_id, processes[active].remain_time);
 		}
@@ -116,6 +116,7 @@ void assign_queue(int counter){
 }
 
 // Calculates wait time for every process
+// when they are not running.
 void increment_wait_time(){
 	for (int i = 0; i < PROCESS_NUMBER; i++){
 		if(processes[i].running == false && processes[i].remain_time > 0){
@@ -125,6 +126,7 @@ void increment_wait_time(){
 }
 
 // Calculates turnaround time for every process
+// from execution until completion.
 void increment_turnaround_time(){
 	for (int i = 0; i < PROCESS_NUMBER; i++){
 		if (processes[i].remain_time > 0){
@@ -142,16 +144,20 @@ int scheduler(int counter, bool found){
 		processes[active].tick++;
 		printf("Process %i tick = %i\n", processes[active].process_id, processes[active].tick);
 		counter++;
+		// This is a check for finished cycles
 		if (processes[active].tick == TIME_QUANTUM){
 			processes[active].running = false;
 			processes[active].tick = 0;
+			// Following if and else statements check for finished process at the same time.
+			// prevents buggy behaviour for process 5 for example because process 5 has a burst
+			// time of exactly 4 milliseconds. 
 			if (processes[active].remain_time == 0){
 				printf("Process %i has finished running.\n", processes[active].process_id);
 				remaining++;
 			}
-				
 			else printf("Process %i has finished a cycle.\n", processes[active].process_id);
-				
+		
+			// Following statement resets the active process back to 1
 			if (processes[active].queue_id == PROCESS_NUMBER){
 				for (int k = 0; k < PROCESS_NUMBER; k++){
 					if (processes[k].queue_id == 1){
@@ -162,6 +168,8 @@ int scheduler(int counter, bool found){
 					}
 				}
 			}
+			// The following else statement checks for the next process that 
+			// has non-zero remain time in the ascending order			
 			else{
 				temp = processes[active].queue_id + 1;
 				while(found == false){
@@ -181,16 +189,18 @@ int scheduler(int counter, bool found){
 					else temp++;						
 				}
 			}
-			printf("active = %i\n", active);
-
 		}
+		// This is a check for finished processes
 		else if (processes[active].remain_time == 0){
 			processes[active].running = false;
 			processes[active].tick = 0;
 			printf("Process %i has finished running.\n", processes[active].process_id);
 			remaining++;
 			printf("remainder = %i\n", remaining);
+			// if remaining number of process has hit 7, it will proceed to calculate
+			// the total value for wait and turnaround times and exit.
 			if (remaining != PROCESS_NUMBER){
+				// Following statement resets the active process back to 1
 				if (processes[active].queue_id == PROCESS_NUMBER){
 					for (int k = 0; k < PROCESS_NUMBER; k++){
 						if (processes[k].queue_id == 1){
@@ -201,6 +211,8 @@ int scheduler(int counter, bool found){
 						}
 					}
 				}
+				// The following else statement checks for the next process that 
+				// has non-zero remain time in the ascending order
 				else{
 					temp = processes[active].queue_id + 1;
 					while(found == false){
@@ -221,6 +233,8 @@ int scheduler(int counter, bool found){
 					}
 				}
 			}
+			// Adds everything together for both the wait and turnaround times
+			// before the scheduler exits itself
 			else{
 				for (int i = 0; i < PROCESS_NUMBER; i++){
 					total_turnaround += processes[i].turnaround_time;
@@ -228,7 +242,6 @@ int scheduler(int counter, bool found){
 				}
 					
 			}
-			printf("active = %i\n", active);
 		}
 	}
 	return counter;
@@ -245,15 +258,16 @@ void run_process_RR(){
 
 		assign_queue(time);
 
+		increment_wait_time();
+		increment_turnaround_time();
+
+		// This is a check for looping through the first 8 seconds with no process.
+		// Not the best mechanism but here we are.
 		if (queue == 0){
-			increment_wait_time();
-			increment_turnaround_time();
 			time++;
 			continue;
 		}
 
-		increment_wait_time();
-		increment_turnaround_time();
 		time = scheduler(time, found);
 	}
 }
@@ -379,17 +393,15 @@ void write_file(){
 	char turnaround_value[20];
 	char* unit = " milliseconds\n";
 
-	gcvt(average_wait, 8, wait_value);
+	gcvt(average_wait, 8, wait_value); // convert floats to strings
 	gcvt(average_turnaround, 8, turnaround_value);
 
 	strcat(output, wait_title);
-	strcat(output, wait_value);
+	strcat(output, wait_value); // concatenate everything into one string
 	strcat(output, unit);
 	strcat(output, turnaround_title);
 	strcat(output, turnaround_value);
 	strcat(output, unit);
-	printf("%s", output);
-	printf("%i\n", strlen(output));
 
 	if (fptr == NULL){
 		printf("Failed to open file.");
@@ -401,7 +413,21 @@ void write_file(){
 	fprintf(fptr, "%s", output);
 	fclose(fptr);
 
-	printf("Finished.\n");
+	printf("Finished writing to the output file.\n");
+}
+
+//Print results, taken from sample
+void print_results() {
+	
+	printf("\nProcess Schedule Table: \n");
+	
+	printf("\tProcess ID\tQueue ID\tArrival Time\tBurst Time\tWait Time\tTurnaround Time\n");
+	
+	for (i = 0; i<PROCESS_NUMBER; i++) {
+	  	printf("\t%d\t\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n", processes[i].process_id, processes[i].queue_id,processes[i].arrive_time, processes[i].burst_time, processes[i].wait_time, processes[i].turnaround_time);
+	}
+	
+	printf("\nPlease check the output file %s for the Average wait and turnaround times.\n", output_file);
 }
 
 /* This function calculates Round Robin (RR) with a time quantum of 4,
@@ -423,8 +449,8 @@ void *worker2()
    // add your code here
 	sem_wait(&sem_RR);
 	// const char* output = fifo_read();
-	//print_results();
 	write_file();
+	print_results();
 }
 
 /* this main function creates named pipe and threads */
